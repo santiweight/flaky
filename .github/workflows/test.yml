@@ -121,22 +121,34 @@ jobs:
       - name: Display results
         if: always()
         run: |
-          if [ -f eval_results.json ]; then
+          if [ -f eval_results.json ] && [ -s eval_results.json ]; then
             echo "📊 Demo Eval Results:"
             python3 << 'PYTHON_EOF'
           import json
-          with open('eval_results.json') as f:
-              data = json.load(f)
-          rate = data['success_rate']
-          emoji = '🟢' if rate >= 90 else '🟡' if rate >= 70 else '🔴'
-          print(f'{emoji} Success Rate: {rate:.1f}%')
-          print(f'Passed: {data["total_passed"]}/{data["total_tests"]}')
-          print(f'Generations: {data["num_generations"]}')
-          print()
-          print('Per-Test Breakdown:')
-          for name, stats in data['per_test_breakdown'].items():
-              print(f'  {name}: {stats["rate"]:.0f}% ({stats["passed"]}/{stats["total"]})')
+          import sys
+          try:
+              with open('eval_results.json') as f:
+                  data = json.load(f)
+              rate = data['success_rate']
+              emoji = '🟢' if rate >= 90 else '🟡' if rate >= 70 else '🔴'
+              print(f'{emoji} Success Rate: {rate:.1f}%')
+              print(f'Passed: {data["total_passed"]}/{data["total_tests"]}')
+              print(f'Generations: {data["num_generations"]}')
+              print()
+              if data['per_test_breakdown']:
+                  print('Per-Test Breakdown:')
+                  for name, stats in data['per_test_breakdown'].items():
+                      print(f'  {name}: {stats["rate"]:.0f}% ({stats["passed"]}/{stats["total"]})')
+              else:
+                  print('⚠️  No tests were executed')
+          except Exception as e:
+              print(f'⚠️  Could not parse results: {e}')
+              sys.exit(1)
           PYTHON_EOF
+          else
+            echo "⚠️  Demo eval did not produce results (eval_results.json missing or empty)"
+            echo "This usually means the eval failed to run due to process pool issues in CI"
+            exit 1
           fi
       
       - name: Post results to PR
