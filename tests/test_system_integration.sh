@@ -40,7 +40,8 @@ fi
 # Test 4: Library CLI
 echo ""
 echo "Test 4: Flaky CLI"
-cd /Users/santiagoweight/projects/flaky
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
 list_output=$(PYTHONPATH=$PWD:$PYTHONPATH python3 -m flaky list 2>&1)
 if [[ "$list_output" == *"quiz_answering"* ]]; then
     echo "✅ PASS - CLI can list eval cases"
@@ -66,7 +67,7 @@ required_files=(
 
 all_exist=true
 for file in "${required_files[@]}"; do
-    if [ ! -f "/Users/santiagoweight/projects/flaky/$file" ]; then
+    if [ ! -f "$SCRIPT_DIR/../$file" ]; then
         echo "❌ Missing: $file"
         all_exist=false
     fi

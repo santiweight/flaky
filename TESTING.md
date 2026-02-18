@@ -5,31 +5,35 @@
 The project includes comprehensive tests at multiple levels:
 
 1. **Unit Tests** - Test individual components in isolation
-2. **Integration Tests** - Test component interactions  
-3. **System Tests** - Test the full running system
-4. **E2E Tests** - Test complete user workflows
+2. **Integration Tests** - Test component interactions
+3. **E2E Tests** - Test complete user workflows
 
 ## Quick Start
 
 ### Run All Tests
-```bash
-# System integration tests (requires servers running)
-./tests/test_system_integration.sh
 
-# Unit tests (no servers required)
-PYTHONPATH=$PWD:$PYTHONPATH pytest tests/test_*.py -v
+```bash
+# All library tests
+pytest tests/ -v
+
+# Backend tests
+cd web/backend && pytest test_main.py -v
+
+# All tests with coverage
+pytest tests/ --cov=flaky --cov-report=html
 ```
 
 ### Run Specific Test Suites
+
 ```bash
-# Just library tests
-PYTHONPATH=$PWD:$PYTHONPATH pytest tests/test_expect.py tests/test_case.py tests/test_runner.py -v
+# Library unit tests
+pytest tests/test_expect.py tests/test_case.py tests/test_runner.py -v
 
-# Just integration tests
-PYTHONPATH=$PWD:$PYTHONPATH pytest tests/test_integration.py -v
+# Integration tests
+pytest tests/test_integration.py -v
 
-# Backend tests (requires backend dependencies)
-cd web/backend && pytest test_main.py -v
+# E2E tests (requires servers running)
+pytest tests/test_e2e.py -v
 ```
 
 ## Test Categories
@@ -70,18 +74,7 @@ cd web/backend && pytest test_main.py -v
 - `/proxy-pdf` endpoint
 - Error handling
 
-### 3. System Integration Tests (`tests/test_system_integration.sh`)
-
-**6 tests covering:**
-1. Backend health check
-2. CORS headers
-3. Frontend accessibility
-4. CLI functionality
-5. File structure integrity
-6. API endpoint registration
-7. PDF upload (optional, requires API key)
-
-### 4. E2E Tests (`tests/test_e2e.py`)
+### 3. E2E Tests (`tests/test_e2e.py`)
 
 **9 tests covering:**
 - Full PDF upload workflow
@@ -90,40 +83,22 @@ cd web/backend && pytest test_main.py -v
 - Answer sheet generation
 - Error handling
 
-## Running Tests in CI/CD
-
-The project includes a GitHub Actions workflow (`.github/workflows/test.yml`) that runs:
-
-1. **Unit tests** - All library tests
-2. **Backend tests** - API endpoint tests
-3. **E2E tests** - Full workflow tests
-4. **Demo eval** - Runs the quiz answering eval and posts results to PRs
-
 ## Test Requirements
 
-### Minimal (Unit Tests Only)
+### Unit Tests
 - Python 3.10+
 - pytest
-- No servers required
-- No API keys required
+- No servers or API keys required
 
-### Full (All Tests)
+### Backend Tests
 - Python 3.10+
-- pytest, requests, reportlab
-- Backend running on port 8001
-- Frontend running on port 5173
-- ANTHROPIC_API_KEY (for LLM tests)
+- pytest, fastapi, anthropic, pdfplumber, reportlab
+- Tests use mocked LLM responses
 
-## Test Results
-
-Current status:
-```
-✅ 45/45 library unit tests passing
-✅ 9/9 backend unit tests passing  
-✅ 6/6 system integration tests passing
-✅ Backend healthy (port 8001)
-✅ Frontend serving (port 5173)
-```
+### E2E Tests
+- Backend server running on port 8001
+- Frontend server running on port 5173
+- ANTHROPIC_API_KEY environment variable (for actual LLM calls)
 
 ## Adding New Tests
 
@@ -139,10 +114,10 @@ Current status:
 3. Mock external dependencies (LLM, HTTP requests)
 4. Run with `cd web/backend && pytest test_main.py`
 
-### For System Integration
-1. Add checks to `tests/test_system_integration.sh`
-2. Use curl for API testing
-3. Check file existence, server health, etc.
+### For E2E Tests
+1. Add tests to `tests/test_e2e.py`
+2. Use `requests` library for API testing
+3. Ensure servers are running before tests
 4. Make tests idempotent and cleanup after
 
 ## Debugging Failed Tests
@@ -159,19 +134,17 @@ pytest tests/test_file.py::test_function_name -v
 pytest tests/test_file.py -s
 ```
 
-### Integration Test Failures
+### E2E Test Failures
 ```bash
-# Check server logs
-tail -f /Users/santiagoweight/.cursor/projects/Users-santiagoweight-projects-flaky/terminals/*.txt
-
-# Test endpoints manually
+# Check if servers are running
 curl -v http://localhost:8001/health
-```
+curl -v http://localhost:5173
 
-### System Test Failures
-```bash
-# Run with bash debug mode
-bash -x ./tests/test_system_integration.sh
+# Check server logs in terminals
+# Test endpoints manually
+curl -X POST http://localhost:8001/solve \
+  -H "Content-Type: application/json" \
+  -d '{"url": "test.pdf", "runs": 1}'
 ```
 
 ## Performance Testing

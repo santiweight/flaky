@@ -36,28 +36,28 @@ fi
 # Test 1: Library Unit Tests
 echo ""
 echo "1️⃣  Running library unit tests..."
-cd /Users/santiagoweight/projects/flaky
-PYTHONPATH=/Users/santiagoweight/projects/flaky:$PYTHONPATH pytest tests/test_expect.py tests/test_case.py tests/test_runner.py -q
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+PYTHONPATH=$PWD:$PYTHONPATH pytest tests/test_expect.py tests/test_case.py tests/test_runner.py -q
 echo -e "${GREEN}✓ Library tests passed${NC}"
 
 # Test 2: Integration Tests
 echo ""
 echo "2️⃣  Running integration tests..."
-PYTHONPATH=/Users/santiagoweight/projects/flaky:$PYTHONPATH pytest tests/test_integration.py -q
+PYTHONPATH=$PWD:$PYTHONPATH pytest tests/test_integration.py -q
 echo -e "${GREEN}✓ Integration tests passed${NC}"
 
 # Test 3: E2E Tests
 echo ""
 echo "3️⃣  Running end-to-end tests..."
-PYTHONPATH=/Users/santiagoweight/projects/flaky:$PYTHONPATH pytest tests/test_e2e.py -v
+PYTHONPATH=$PWD:$PYTHONPATH pytest tests/test_e2e.py -v
 echo -e "${GREEN}✓ E2E tests passed${NC}"
 
 # Test 4: Demo Eval (if ANTHROPIC_API_KEY is set)
 if [ -n "$ANTHROPIC_API_KEY" ]; then
     echo ""
     echo "4️⃣  Running demo eval case..."
-    cd /Users/santiagoweight/projects/flaky
-    PYTHONPATH=/Users/santiagoweight/projects/flaky:$PYTHONPATH python -m flaky run --case quiz_answering --runs 2 --format json > /tmp/flaky_demo_result.json
+    PYTHONPATH=$PWD:$PYTHONPATH python -m flaky run --case quiz_answering --runs 2 --format json > /tmp/flaky_demo_result.json
     
     # Check that it ran successfully
     if [ $? -eq 0 ]; then

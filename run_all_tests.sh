@@ -18,8 +18,9 @@ NC='\033[0m'
 
 # Test 1: Library Unit Tests
 echo -e "${BLUE}1. Library Unit Tests${NC}"
-echo "   Running 45 tests..."
-cd /Users/santiagoweight/projects/flaky
+echo "   Running tests..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 if PYTHONPATH=$PWD:$PYTHONPATH pytest tests/test_expect.py tests/test_case.py tests/test_runner.py tests/test_integration.py -q > /tmp/unit_test_output.txt 2>&1; then
     unit_count=$(grep -o "[0-9]* passed" /tmp/unit_test_output.txt | head -1 | awk '{print $1}')
     echo -e "   ${GREEN}✓ $unit_count tests passed${NC}"
@@ -70,7 +71,7 @@ required_files=(
 
 missing_files=()
 for file in "${required_files[@]}"; do
-    if [ ! -f "/Users/santiagoweight/projects/flaky/$file" ]; then
+    if [ ! -f "$SCRIPT_DIR/$file" ]; then
         missing_files+=("$file")
     fi
 done

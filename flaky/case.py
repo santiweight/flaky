@@ -89,7 +89,7 @@ class EvalCase(ABC):
         except Exception as e:
             try:
                 self.tearDown()
-            except:
+            except Exception:
                 pass
             duration_ms = (time.perf_counter() - start_time) * 1000
             return TestResult(

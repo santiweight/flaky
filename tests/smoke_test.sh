@@ -7,8 +7,9 @@ echo "=============================="
 # Test 1: Library unit tests
 echo ""
 echo "✓ Running library unit tests..."
-cd /Users/santiagoweight/projects/flaky
-PYTHONPATH=/Users/santiagoweight/projects/flaky:$PYTHONPATH pytest tests/ -q
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+PYTHONPATH=$PWD:$PYTHONPATH pytest tests/ -q
 
 # Test 2: Backend health check
 echo ""
@@ -35,7 +36,7 @@ fi
 # Test 4: Demo eval case exists
 echo ""
 echo "✓ Testing demo eval..."
-if [ -f "/Users/santiagoweight/projects/flaky/demo/evals/quiz_answering/eval.py" ]; then
+if [ -f "$SCRIPT_DIR/../demo/evals/quiz_answering/eval.py" ]; then
     echo "  Demo eval case exists"
 else
     echo "  ❌ Demo eval case missing"
