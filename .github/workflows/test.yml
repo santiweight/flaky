@@ -77,12 +77,16 @@ jobs:
           pip install -r requirements.txt
       
       - name: Start backend
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           cd web/backend
           python main.py &
           sleep 5
       
       - name: Run E2E tests
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           PYTHONPATH=$PWD:$PYTHONPATH pytest tests/test_e2e.py -v
       
@@ -119,19 +123,20 @@ jobs:
         run: |
           if [ -f eval_results.json ]; then
             echo "📊 Demo Eval Results:"
-            cat eval_results.json | python3 -c "
-          import sys, json
-          data = json.load(sys.stdin)
+            python3 << 'PYTHON_EOF'
+          import json
+          with open('eval_results.json') as f:
+              data = json.load(f)
           rate = data['success_rate']
           emoji = '🟢' if rate >= 90 else '🟡' if rate >= 70 else '🔴'
           print(f'{emoji} Success Rate: {rate:.1f}%')
-          print(f'Passed: {data[\"total_passed\"]}/{data[\"total_tests\"]}')
-          print(f'Generations: {data[\"num_generations\"]}')
+          print(f'Passed: {data["total_passed"]}/{data["total_tests"]}')
+          print(f'Generations: {data["num_generations"]}')
           print()
           print('Per-Test Breakdown:')
           for name, stats in data['per_test_breakdown'].items():
-              print(f'  {name}: {stats[\"rate"]:.0f}% ({stats[\"passed\"]}/{stats[\"total\"]})')
-          "
+              print(f'  {name}: {stats["rate"]:.0f}% ({stats["passed"]}/{stats["total"]})')
+          PYTHON_EOF
           fi
       
       - name: Post results to PR
