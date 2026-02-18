@@ -94,7 +94,6 @@ jobs:
   demo-eval:
     name: Demo Eval
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     
     steps:
       - uses: actions/checkout@v4
@@ -115,8 +114,28 @@ jobs:
         run: |
           PYTHONPATH=$PWD:$PYTHONPATH python -m flaky run --case quiz_answering --runs 10 --format json > eval_results.json
       
-      - name: Post results to PR
+      - name: Display results
         if: always()
+        run: |
+          if [ -f eval_results.json ]; then
+            echo "📊 Demo Eval Results:"
+            cat eval_results.json | python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          rate = data['success_rate']
+          emoji = '🟢' if rate >= 90 else '🟡' if rate >= 70 else '🔴'
+          print(f'{emoji} Success Rate: {rate:.1f}%')
+          print(f'Passed: {data[\"total_passed\"]}/{data[\"total_tests\"]}')
+          print(f'Generations: {data[\"num_generations\"]}')
+          print()
+          print('Per-Test Breakdown:')
+          for name, stats in data['per_test_breakdown'].items():
+              print(f'  {name}: {stats[\"rate"]:.0f}% ({stats[\"passed\"]}/{stats[\"total\"]})')
+          "
+          fi
+      
+      - name: Post results to PR
+        if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
         with:
           script: |
