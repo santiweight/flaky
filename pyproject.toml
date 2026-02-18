@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flaky"
+version = "0.1.0"
+description = "Binary eval framework for non-deterministic workloads"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = []
+
+[project.scripts]
+flaky = "flaky.runner:main"
+
+[project.optional-dependencies]
+dotenv = ["python-dotenv>=1.0.0"]
+demo = [
+    "anthropic>=0.40.0",
+    "python-dotenv>=1.0.0",
+]
+dev = [
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "requests>=2.31.0",
+    "reportlab>=4.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["flaky"]
+
+[tool.flaky]
+evals_dir = "demo/evals"
+runs = 5
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true

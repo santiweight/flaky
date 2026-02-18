@@ -1,0 +1,52 @@
+[
+  {
+    "question": "What is the capital of France?",
+    "choices": {"A": "London", "B": "Berlin", "C": "Paris", "D": "Madrid"},
+    "correct": "C"
+  },
+  {
+    "question": "What is 2 + 2?",
+    "choices": {"A": "3", "B": "4", "C": "5", "D": "6"},
+    "correct": "B"
+  },
+  {
+    "question": "Which planet is known as the Red Planet?",
+    "choices": {"A": "Venus", "B": "Mars", "C": "Jupiter", "D": "Saturn"},
+    "correct": "B"
+  },
+  {
+    "question": "Who wrote 'Romeo and Juliet'?",
+    "choices": {"A": "Charles Dickens", "B": "Mark Twain", "C": "William Shakespeare", "D": "Jane Austen"},
+    "correct": "C"
+  },
+  {
+    "question": "What is the largest ocean on Earth?",
+    "choices": {"A": "Atlantic", "B": "Indian", "C": "Arctic", "D": "Pacific"},
+    "correct": "D"
+  },
+  {
+    "question": "What is the chemical symbol for gold?",
+    "choices": {"A": "Go", "B": "Au", "C": "Gd", "D": "Ag"},
+    "correct": "B"
+  },
+  {
+    "question": "In what year did World War II end?",
+    "choices": {"A": "1943", "B": "1944", "C": "1945", "D": "1946"},
+    "correct": "C"
+  },
+  {
+    "question": "What is the speed of light?",
+    "choices": {"A": "300,000 km/s", "B": "150,000 km/s", "C": "450,000 km/s", "D": "600,000 km/s"},
+    "correct": "A"
+  },
+  {
+    "question": "Which programming language is known for its use in data science?",
+    "choices": {"A": "Java", "B": "C++", "C": "Python", "D": "Ruby"},
+    "correct": "C"
+  },
+  {
+    "question": "What is the smallest prime number?",
+    "choices": {"A": "0", "B": "1", "C": "2", "D": "3"},
+    "correct": "C"
+  }
+]

@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pdfplumber
+anthropic
+python-multipart
+reportlab
+pytest
+pytest-asyncio
+httpx
