@@ -109,7 +109,8 @@ def test_solve_endpoint_missing_url():
 @patch('main.download_pdf')
 def test_solve_endpoint_download_failure(mock_download):
     """Test /solve endpoint when PDF download fails."""
-    mock_download.side_effect = Exception("Network error")
+    from fastapi import HTTPException
+    mock_download.side_effect = HTTPException(status_code=400, detail="Failed to download PDF: Network error")
     
     response = client.post("/solve", json={"url": "http://bad.com/test.pdf", "runs": 1})
     assert response.status_code == 400
