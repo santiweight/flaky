@@ -1,15 +1,16 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+import io
+import json
+from typing import Dict, List
+from urllib.request import Request, urlopen
+
+import anthropic
+import pdfplumber
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
-import anthropic
-import pdfplumber
-import io
-import json
-from urllib.request import urlopen, Request
-from typing import List, Dict, Optional
+from reportlab.lib.pagesizes import letter as letter_size
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
 
 app = FastAPI()
 
@@ -73,7 +74,8 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
 
 def parse_questions_with_llm(text: str) -> List[Question]:
     """Use Claude to parse questions from text"""
-    prompt = f"""Extract all multiple choice questions from this text. Return ONLY valid JSON with no markdown formatting.
+    prompt = f"""Extract all multiple choice questions from this text.
+Return ONLY valid JSON with no markdown formatting.
 
 The text may be in a two-column layout or have complex formatting. Look for:
 - Question numbers (e.g., "1.", "Question 1", "1)")
@@ -104,19 +106,19 @@ Text:
             max_tokens=8192,
             messages=[{"role": "user", "content": prompt}]
         )
-        
+
         response_text = message.content[0].text.strip()
-        
+
         # Remove markdown code blocks if present
         if response_text.startswith("```"):
             lines = response_text.split("\n")
             response_text = "\n".join(lines[1:-1])
-        
+
         questions_data = json.loads(response_text)
-        
+
         if not questions_data:
             raise HTTPException(status_code=400, detail="No questions found in PDF")
-        
+
         return [Question(**q) for q in questions_data]
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse LLM response: {e}")
@@ -126,7 +128,7 @@ Text:
 def answer_question(question: Question) -> str:
     """Use Claude to answer a question"""
     choices_text = "\n".join([f"{k}. {v}" for k, v in question.choices.items()])
-    
+
     prompt = f"""Answer this multiple choice question. Reply with ONLY the letter (A, B, C, or D).
 
 Question: {question.question}
@@ -145,13 +147,13 @@ Reply with only the letter of the correct answer."""
                 {"role": "assistant", "content": "The correct answer is:"}
             ]
         )
-        
+
         answer = message.content[0].text.strip()
         # Extract just the letter
         for char in answer:
             if char.upper() in question.choices:
                 return char.upper()
-        
+
         return list(question.choices.keys())[0]
     except Exception as e:
         print(f"Error answering question: {e}")
@@ -176,10 +178,10 @@ async def solve_quiz(request: SolveRequest):
     # Download and extract
     pdf_bytes = download_pdf(request.url)
     text = extract_text_from_pdf(pdf_bytes)
-    
+
     # Parse questions
     questions = parse_questions_with_llm(text)
-    
+
     # Answer questions for each run
     runs = []
     for run_num in range(request.runs):
@@ -193,7 +195,7 @@ async def solve_quiz(request: SolveRequest):
                 model_answer=model_answer
             ))
         runs.append(Run(run=run_num + 1, answers=answers))
-    
+
     return SolveResponse(
         url=request.url,
         num_questions=len(questions),
@@ -203,18 +205,21 @@ async def solve_quiz(request: SolveRequest):
     )
 
 @app.post("/solve-upload", response_model=SolveResponse)
-async def solve_quiz_upload(file: UploadFile = File(...), runs: int = 1):
+async def solve_quiz_upload(file: UploadFile = File(...), runs: str = "1"):
     """Upload PDF, extract questions, and answer them"""
+    # Parse runs from form data (comes as string)
+    num_runs = int(runs)
+
     # Read uploaded file
     pdf_bytes = await file.read()
     text = extract_text_from_pdf(pdf_bytes)
-    
+
     # Parse questions
     questions = parse_questions_with_llm(text)
-    
+
     # Answer questions for each run
     run_list = []
-    for run_num in range(runs):
+    for run_num in range(num_runs):
         answers = []
         for q in questions:
             model_answer = answer_question(q)
@@ -225,44 +230,44 @@ async def solve_quiz_upload(file: UploadFile = File(...), runs: int = 1):
                 model_answer=model_answer
             ))
         run_list.append(Run(run=run_num + 1, answers=answers))
-    
+
     return SolveResponse(
         url=file.filename or "uploaded.pdf",
         num_questions=len(questions),
-        num_runs=runs,
+        num_runs=num_runs,
         questions=questions,
         runs=run_list
     )
 
 @app.post("/answer-sheet")
-async def generate_answer_sheet(request: SolveRequest):
+async def generate_answer_sheet(file: UploadFile = File(...), runs: str = "1"):
     """Generate a PDF answer sheet with bubbles filled in"""
-    # Get the answers first
-    solve_response = await solve_quiz(request)
+    # Get the answers first by solving the uploaded quiz
+    solve_response = await solve_quiz_upload(file, runs)
     answers = solve_response.runs[0].answers
-    
+
     # Create PDF
     buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
-    
+    c = canvas.Canvas(buffer, pagesize=letter_size)
+    width, height = letter_size
+
     # Title
     c.setFont("Helvetica-Bold", 16)
     c.drawString(50, height - 50, "Answer Sheet")
-    
+
     # Draw answers in a grid
     y = height - 100
     x = 50
-    
+
     c.setFont("Helvetica", 10)
     for answer in answers:
         if y < 50:
             c.showPage()
             y = height - 50
-        
+
         # Question number
         c.drawString(x, y, f"{answer.question_number}.")
-        
+
         # Draw bubbles for A, B, C, D
         bubble_x = x + 30
         for letter in ["A", "B", "C", "D"]:
@@ -275,17 +280,17 @@ async def generate_answer_sheet(request: SolveRequest):
                 c.circle(bubble_x, y + 2, 6, fill=1)
                 c.setStrokeColorRGB(0, 0, 0)
                 c.circle(bubble_x, y + 2, 6, fill=0)
-            
+
             # Draw letter
             c.setFillColorRGB(0, 0, 0)
             c.drawString(bubble_x - 2, y - 2, letter)
             bubble_x += 30
-        
+
         y -= 25
-    
+
     c.save()
     buffer.seek(0)
-    
+
     return Response(
         content=buffer.getvalue(),
         media_type="application/pdf",

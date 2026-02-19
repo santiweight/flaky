@@ -172,6 +172,7 @@ class EvalRunner:
 
         Each run executes in an isolated subprocess via ProcessPoolExecutor.
         This prevents state leaking between runs — the core value proposition.
+        Falls back to sequential execution if process pool fails (e.g., in CI).
         """
         eval_cases = self.load_case(case_name)
         case_dir = self.cases_dir / case_name
@@ -182,6 +183,7 @@ class EvalRunner:
             print(f"Running: {case_name} [{class_names}] ({num_runs} generations, {mode})")
 
         report = EvalReport(case_name=case_name, num_generations=num_runs)
+        failed_generations: list[int] = []
 
         effective_workers = 1 if not parallel else (max_workers or min(num_runs, 10))
         with ProcessPoolExecutor(max_workers=effective_workers) as executor:
@@ -198,7 +200,22 @@ class EvalRunner:
                     if verbose:
                         self.reporter.print_generation_progress(gen_result)
                 except Exception as e:
-                    print(f"Generation {gen_num} failed: {e}")
+                    if verbose:
+                        print(f"Generation {gen_num} failed in process pool: {e}")
+                    failed_generations.append(gen_num)
+
+        if failed_generations:
+            if verbose:
+                print(f"Retrying {len(failed_generations)} failed generations sequentially...")
+            for gen_num in failed_generations:
+                try:
+                    gen_result = _run_single_generation(case_dir, gen_num)
+                    report.generation_results.append(gen_result)
+                    if verbose:
+                        self.reporter.print_generation_progress(gen_result)
+                except Exception as e:
+                    if verbose:
+                        print(f"Generation {gen_num} failed sequentially: {e}")
 
         if verbose:
             self.reporter.print_summary(report)
