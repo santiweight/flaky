@@ -17,6 +17,8 @@ else:
         import tomli as tomllib  # type: ignore[no-redef]
 
 from flaky.case import EvalCase, GenerationResult
+from flaky.cloud import CloudClient, CloudConfig
+from flaky.git import get_git_context
 from flaky.reporter import EvalReport, Reporter, SuiteSummary
 
 
@@ -90,7 +92,7 @@ def _run_single_generation(case_dir: Path, gen_num: int) -> GenerationResult:
 
     import time
     start_time = time.perf_counter()
-    
+
     combined_result = GenerationResult(generation_num=gen_num)
     for eval_class in eval_classes:
         eval_case = eval_class()
@@ -109,8 +111,8 @@ class EvalRunner:
         self.reporter = Reporter()
 
     def discover_cases(self) -> list[str]:
-        """Discover available eval cases (directories containing .py files with EvalCase subclasses)."""
-        cases = []
+        """Discover available eval cases (directories with .py files containing EvalCase)."""
+        cases: list[str] = []
         if not self.cases_dir.exists():
             return cases
 
@@ -202,6 +204,33 @@ class EvalRunner:
             self.reporter.print_summary(report)
 
         return report
+
+
+def _upload_reports(
+    reports: list[EvalReport],
+    config: dict,
+    verbose: bool = True,
+) -> None:
+    """Upload reports to cloud if configured."""
+    try:
+        cloud_config = CloudConfig.from_config(config)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+    if cloud_config is None:
+        return
+
+    git_context = get_git_context()
+
+    with CloudClient(cloud_config) as client:
+        for report in reports:
+            result = client.upload_report(report, git_context)
+            if verbose:
+                if result.success:
+                    print(f"\n✓ Uploaded to {result.url}")
+                else:
+                    print(f"\n⚠ Upload failed: {result.error}")
 
 
 def main() -> None:
@@ -333,6 +362,8 @@ def main() -> None:
             if args.all and len(all_reports) > 1:
                 summary = SuiteSummary(reports=all_reports)
                 reporter.print_suite_summary(summary)
+
+        _upload_reports(all_reports, config, verbose=(args.format == "text"))
 
 
 if __name__ == "__main__":

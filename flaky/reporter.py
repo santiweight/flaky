@@ -126,11 +126,12 @@ class EvalReport:
             if not timings:
                 continue
             sorted_timings = sorted(timings)
+            p95 = quantiles(sorted_timings, n=20)[18] if len(sorted_timings) > 1 else timings[0]
             stats[name] = {
                 "min_ms": min(timings),
                 "max_ms": max(timings),
                 "avg_ms": mean(timings),
-                "p95_ms": quantiles(sorted_timings, n=20)[18] if len(sorted_timings) > 1 else timings[0],
+                "p95_ms": p95,
             }
         return stats
 
@@ -191,7 +192,10 @@ class Reporter:
         """Print the final summary report."""
         print(f"\n{self._bold('Results:')}")
         print(f"  Generations: {report.num_generations}")
-        tests_per_gen = report.total_tests // report.num_generations if report.num_generations > 0 else 0
+        if report.num_generations > 0:
+            tests_per_gen = report.total_tests // report.num_generations
+        else:
+            tests_per_gen = 0
         print(f"  Tests per generation: {tests_per_gen}")
 
         rate = report.success_rate
@@ -210,7 +214,7 @@ class Reporter:
         print(f"\n  {self._bold('Per-test breakdown:')}")
         test_breakdown = report.per_test_breakdown()
         test_timing = report.per_test_timing()
-        
+
         for test_name, (passed, total, rate) in test_breakdown.items():
             rate_color = self._green if rate >= 80 else self._red
             timing_info = ""
@@ -231,7 +235,8 @@ class Reporter:
         print(f"  Cases: {summary.total_cases}")
         print(f"  Total generations: {summary.total_generations}")
         print(f"  Total test executions: {summary.total_tests}")
-        print(f"  Success rate: {rate_color(f'{rate:.1f}%')} ({summary.total_passed}/{summary.total_tests})")
+        rate_str = rate_color(f'{rate:.1f}%')
+        print(f"  Success rate: {rate_str} ({summary.total_passed}/{summary.total_tests})")
 
         print(f"\n{self._bold('Per-Case Results:')}")
         case_summaries = summary.get_per_case_summary()

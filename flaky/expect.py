@@ -57,7 +57,7 @@ class Expectation:
         """Assert that value is not None."""
         if self.value is None:
             raise ExpectationError(
-                f"Expected value to not be None"
+                "Expected value to not be None"
             )
 
     def to_have_attr(self, attr_name: str) -> None:
