@@ -102,7 +102,7 @@ Text:
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-sonnet-4-20250514",
             max_tokens=8192,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -140,11 +140,10 @@ Reply with only the letter of the correct answer."""
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-sonnet-4-20250514",
             max_tokens=10,
             messages=[
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": "The correct answer is:"}
+                {"role": "user", "content": prompt}
             ]
         )
 
