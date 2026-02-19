@@ -5,7 +5,7 @@ from urllib.request import Request, urlopen
 
 import anthropic
 import pdfplumber
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -205,7 +205,7 @@ async def solve_quiz(request: SolveRequest):
     )
 
 @app.post("/solve-upload", response_model=SolveResponse)
-async def solve_quiz_upload(file: UploadFile = File(...), runs: str = "1"):
+async def solve_quiz_upload(file: UploadFile = File(...), runs: str = Form("1")):
     """Upload PDF, extract questions, and answer them"""
     # Parse runs from form data (comes as string)
     num_runs = int(runs)
@@ -240,7 +240,7 @@ async def solve_quiz_upload(file: UploadFile = File(...), runs: str = "1"):
     )
 
 @app.post("/answer-sheet")
-async def generate_answer_sheet(file: UploadFile = File(...), runs: str = "1"):
+async def generate_answer_sheet(file: UploadFile = File(...), runs: str = Form("1")):
     """Generate a PDF answer sheet with bubbles filled in"""
     # Get the answers first by solving the uploaded quiz
     solve_response = await solve_quiz_upload(file, runs)
